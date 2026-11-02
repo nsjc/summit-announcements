@@ -94,6 +94,7 @@ Bugs found while checking the AI-generated code:
 - The employee dropdown ran off the edge of phone screens.
 - Radio buttons in the post form were stretched across the screen.
 - The sample acknowledgment rates came out far from the intended values (one store showed 100%) because of a weak random-number function. It was fixed and re-checked per store.
+- All five store managers had the same first name, and every store had the same first names in the same order, because the name generator only varied last names by store. Fixed, and all 200 names were checked to be unique.
 
 ## Tech
 
