@@ -10,7 +10,7 @@ export default function EmployeeView({ employee, data, onAcknowledge }) {
   const [typeFilter, setTypeFilter] = useState('any')
 
   const feed = data.announcements
-    .filter((a) => a.target === 'all' || a.target === employee.storeId)
+    .filter((a) => !a.archivedAt && (a.target === 'all' || a.target === employee.storeId))
     .sort((a, b) => b.createdAt - a.createdAt)
   const allNeedsAck = feed.filter((a) => a.important && !ackedAt(a))
 

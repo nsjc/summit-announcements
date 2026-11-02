@@ -19,6 +19,16 @@ export default function App() {
     }))
   }
 
+  // Archiving hides a post from employees but keeps it (and its acknowledgments) so it can be restored.
+  function setArchived(id, archived) {
+    setData((d) => ({
+      ...d,
+      announcements: d.announcements.map((a) =>
+        a.id === id ? { ...a, archivedAt: archived ? Date.now() : null } : a,
+      ),
+    }))
+  }
+
   function deleteAnnouncement(id) {
     setData((d) => {
       const { [id]: _removed, ...acks } = d.acks
@@ -98,6 +108,8 @@ export default function App() {
             manager={manager}
             data={data}
             onPost={postAnnouncement}
+            onArchive={(id) => setArchived(id, true)}
+            onRestore={(id) => setArchived(id, false)}
             onDelete={deleteAnnouncement}
           />
         ) : (

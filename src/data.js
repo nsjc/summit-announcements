@@ -60,6 +60,12 @@ function hash(str) {
     h ^= c.charCodeAt(0)
     h = Math.imul(h, 16777619)
   }
+  // Final mixing step so similar ids (p1, p2, ...) don't produce clustered values.
+  h ^= h >>> 16
+  h = Math.imul(h, 0x85ebca6b)
+  h ^= h >>> 13
+  h = Math.imul(h, 0xc2b2ae35)
+  h ^= h >>> 16
   return (h >>> 0) / 4294967295
 }
 

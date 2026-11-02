@@ -3,16 +3,31 @@ import { EMPLOYEES, STORES, storeById } from './data'
 import { authorLabel, shortDate, targetLabel, timeAgo } from './format'
 import Filters, { matchesAudience } from './Filters'
 
-export default function ManagerView({ manager, data, onPost, onDelete }) {
+export default function ManagerView({ manager, data, onPost, onArchive, onRestore, onDelete }) {
   const store = storeById(manager.storeId)
   const [showForm, setShowForm] = useState(false)
   const [notice, setNotice] = useState('')
   const [audienceFilter, setAudienceFilter] = useState('any')
   const [typeFilter, setTypeFilter] = useState('any')
 
-  const forMyStore = data.announcements
-    .filter((a) => a.target === 'all' || a.target === manager.storeId)
-    .sort((a, b) => b.createdAt - a.createdAt)
+  const relevant = data.announcements.filter((a) => a.target === 'all' || a.target === manager.storeId)
+  const forMyStore = relevant.filter((a) => !a.archivedAt).sort((a, b) => b.createdAt - a.createdAt)
+  const archived = relevant.filter((a) => a.archivedAt).sort((a, b) => b.archivedAt - a.archivedAt)
+
+  function showNotice(text) {
+    setNotice(text)
+    setTimeout(() => setNotice(''), 4000)
+  }
+
+  function handleArchive(a) {
+    onArchive(a.id)
+    showNotice(`“${a.title}” moved to Archived. Employees no longer see it.`)
+  }
+
+  function handleRestore(a) {
+    onRestore(a.id)
+    showNotice(`“${a.title}” restored. Employees can see it again.`)
+  }
 
   const visible = forMyStore.filter((a) => {
     if (!matchesAudience(a, audienceFilter)) return false
@@ -31,8 +46,7 @@ export default function ManagerView({ manager, data, onPost, onDelete }) {
     onPost(announcement)
     setShowForm(false)
     const count = EMPLOYEES.filter((e) => announcement.target === 'all' || e.storeId === announcement.target).length
-    setNotice(`Posted to ${targetLabel(announcement.target)} (${count} employees).`)
-    setTimeout(() => setNotice(''), 4000)
+    showNotice(`Posted to ${targetLabel(announcement.target)} (${count} employees).`)
   }
 
   return (
@@ -82,10 +96,60 @@ export default function ManagerView({ manager, data, onPost, onDelete }) {
           announcement={a}
           acks={data.acks[a.id] ?? {}}
           manager={manager}
-          onDelete={onDelete}
+          onArchive={handleArchive}
         />
       ))}
+
+      {archived.length > 0 && (
+        <details className="archive">
+          <summary>Archived ({archived.length})</summary>
+          <p className="muted small">Hidden from employees. Acknowledgments are kept if you restore a post.</p>
+          {archived.map((a) => (
+            <ArchivedItem
+              key={a.id}
+              announcement={a}
+              acks={data.acks[a.id] ?? {}}
+              manager={manager}
+              onRestore={handleRestore}
+              onDelete={onDelete}
+            />
+          ))}
+        </details>
+      )}
     </>
+  )
+}
+
+function ArchivedItem({ announcement: a, acks, manager, onRestore, onDelete }) {
+  const isAuthor = a.authorId === manager.id
+  const audience = EMPLOYEES.filter((e) => a.target === 'all' || e.storeId === a.target)
+  const pct = audience.length ? Math.round((audience.filter((e) => acks[e.id]).length / audience.length) * 100) : 0
+
+  function confirmDelete() {
+    if (window.confirm(`Permanently delete “${a.title}”? This removes it from the archive and can’t be undone.`)) {
+      onDelete(a.id)
+    }
+  }
+
+  return (
+    <article className="card announcement archived">
+      <div className="meta">
+        {a.important && <span className="badge important">Important</span>}
+        <span className="badge">{targetLabel(a.target)}</span>
+        <span className="muted">Archived {shortDate(a.archivedAt)}</span>
+      </div>
+      <h3>{a.title}</h3>
+      <p className="byline">
+        From {authorLabel(a.authorId)} · posted {shortDate(a.createdAt)}
+        {a.important ? ` · ${pct}% acknowledged` : ''}
+      </p>
+      {isAuthor && (
+        <div className="archive-actions">
+          <button className="btn small" onClick={() => onRestore(a)}>Restore</button>
+          <button className="link danger" onClick={confirmDelete}>Delete permanently</button>
+        </div>
+      )}
+    </article>
   )
 }
 
@@ -176,7 +240,7 @@ function NewAnnouncementForm({ manager, onPost, onCancel }) {
   )
 }
 
-function AnnouncementStats({ announcement: a, acks, manager, onDelete }) {
+function AnnouncementStats({ announcement: a, acks, manager, onArchive }) {
   // For company-wide posts, managers start by looking at their own team.
   const [scope, setScope] = useState(a.target === 'all' ? manager.storeId : a.target)
 
@@ -185,10 +249,6 @@ function AnnouncementStats({ announcement: a, acks, manager, onDelete }) {
   const acked = audience.filter((e) => acks[e.id])
   const pending = audience.filter((e) => !acks[e.id])
   const pct = audience.length ? Math.round((acked.length / audience.length) * 100) : 0
-
-  function confirmDelete() {
-    if (window.confirm(`Delete “${a.title}”? This can’t be undone.`)) onDelete(a.id)
-  }
 
   return (
     <article className={`card announcement ${a.important ? 'is-important' : ''}`}>
@@ -274,7 +334,7 @@ function AnnouncementStats({ announcement: a, acks, manager, onDelete }) {
       )}
 
       {a.authorId === manager.id && (
-        <button className="link danger" onClick={confirmDelete}>Delete announcement</button>
+        <button className="link archive-link" onClick={() => onArchive(a)}>Archive announcement</button>
       )}
     </article>
   )

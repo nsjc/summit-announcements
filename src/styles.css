@@ -135,6 +135,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .all-done { color: var(--success); font-weight: 600; margin: 10px 0 0; }
 .error { color: var(--danger); margin: 0 0 8px; }
 
+/* Archive */
+.link.archive-link { display: inline-block; font-size: 13px; margin-top: 12px; color: var(--muted); }
+.archive { margin-top: 28px; }
+.archive > summary {
+  cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); font-weight: 700; margin-bottom: 8px;
+}
+.archive > p { margin: 0 0 10px; }
+.announcement.archived { background: #f8f9fb; border-left: 4px solid #cfd6e0; }
+.announcement.archived h3 { color: #45505f; }
+.archive-actions { display: flex; align-items: center; gap: 16px; margin-top: 12px; }
+.archive-actions .link.danger { margin-top: 0; }
+.btn.small { padding: 6px 14px; font-size: 14px; }
+
 /* Filters */
 .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-bottom: 14px; }
 .filters label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); flex: 1 1 150px; }
