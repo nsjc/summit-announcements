@@ -216,7 +216,22 @@ function AnnouncementStats({ announcement: a, acks, manager, onDelete }) {
             </details>
           )}
           {acked.length > 0 && (
-            <p className="muted small">Last acknowledged {shortDate(Math.max(...acked.map((e) => acks[e.id])))}</p>
+            <details className="pending">
+              <summary>Acknowledged ({acked.length})</summary>
+              <ul className="people">
+                {[...acked]
+                  .sort((x, y) => acks[y.id] - acks[x.id])
+                  .map((e) => (
+                    <li key={e.id}>
+                      <span>{e.name}</span>
+                      <span className="muted">
+                        {e.title}
+                        {scope === 'all' ? ` · ${storeById(e.storeId).name}` : ''} · {shortDate(acks[e.id])}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </details>
           )}
         </div>
       ) : (
