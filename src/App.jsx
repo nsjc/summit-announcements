@@ -4,7 +4,8 @@ import ManagerView from './ManagerView'
 import EmployeeView from './EmployeeView'
 
 export default function App() {
-  const [data, setData] = useStoredState('summit.data.v1', () => buildSeedData())
+  // v2 added reading times (ackSeconds); bumping the key gives everyone fresh sample data.
+  const [data, setData] = useStoredState('summit.data.v2', () => buildSeedData())
   const [role, setRole] = useStoredState('summit.role', 'manager')
   const [managerId, setManagerId] = useStoredState('summit.managerId', MANAGERS[0].id)
   const [employeeId, setEmployeeId] = useStoredState('summit.employeeId', DEMO_EMPLOYEE_ID)
@@ -14,6 +15,7 @@ export default function App() {
 
   function postAnnouncement(announcement) {
     setData((d) => ({
+      ...d,
       announcements: [announcement, ...d.announcements],
       acks: announcement.important ? { ...d.acks, [announcement.id]: {} } : d.acks,
     }))
@@ -32,15 +34,20 @@ export default function App() {
   function deleteAnnouncement(id) {
     setData((d) => {
       const { [id]: _removed, ...acks } = d.acks
-      return { announcements: d.announcements.filter((a) => a.id !== id), acks }
+      const { [id]: _removedSecs, ...ackSeconds } = d.ackSeconds ?? {}
+      return { announcements: d.announcements.filter((a) => a.id !== id), acks, ackSeconds }
     })
   }
 
-  function acknowledge(announcementId, personId) {
-    setData((d) => ({
-      ...d,
-      acks: { ...d.acks, [announcementId]: { ...d.acks[announcementId], [personId]: Date.now() } },
-    }))
+  function acknowledge(announcementId, personId, seconds) {
+    setData((d) => {
+      const ackSeconds = d.ackSeconds ?? {}
+      return {
+        ...d,
+        acks: { ...d.acks, [announcementId]: { ...d.acks[announcementId], [personId]: Date.now() } },
+        ackSeconds: { ...ackSeconds, [announcementId]: { ...ackSeconds[announcementId], [personId]: seconds } },
+      }
+    })
   }
 
   function resetDemo() {

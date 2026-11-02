@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { storeById } from './data'
 import { authorLabel, shortDate, targetLabel, timeAgo } from './format'
 import Filters, { matchesAudience } from './Filters'
@@ -58,7 +58,12 @@ export default function EmployeeView({ employee, data, onAcknowledge }) {
             📌 Needs your acknowledgment ({needsAck.length})
           </h2>
           {needsAck.map((a) => (
-            <FeedItem key={a.id} announcement={a} pinned onAcknowledge={() => onAcknowledge(a.id, employee.id)} />
+            <FeedItem
+              key={`${employee.id}-${a.id}`}
+              announcement={a}
+              pinned
+              onAcknowledge={(seconds) => onAcknowledge(a.id, employee.id, seconds)}
+            />
           ))}
         </>
       )}
@@ -82,8 +87,30 @@ export default function EmployeeView({ employee, data, onAcknowledge }) {
 }
 
 function FeedItem({ announcement: a, pinned, ackedAt, onAcknowledge }) {
+  const cardRef = useRef(null)
+  const seenAt = useRef(null)
+
+  // Note when a pinned post first scrolls onto the screen, so managers can see how long it was up before "Got it".
+  useEffect(() => {
+    if (!pinned) return
+    if (typeof IntersectionObserver === 'undefined') {
+      seenAt.current = Date.now()
+      return
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && seenAt.current == null) seenAt.current = Date.now()
+    })
+    observer.observe(cardRef.current)
+    return () => observer.disconnect()
+  }, [pinned])
+
+  function handleGotIt() {
+    const start = seenAt.current ?? Date.now()
+    onAcknowledge(Math.round((Date.now() - start) / 1000))
+  }
+
   return (
-    <article className={`card announcement ${pinned ? 'is-pinned' : ''}`}>
+    <article ref={cardRef} className={`card announcement ${pinned ? 'is-pinned' : ''}`}>
       <div className="meta">
         {a.important && <span className="badge important">Important</span>}
         <span className="badge">{targetLabel(a.target)}</span>
@@ -93,7 +120,7 @@ function FeedItem({ announcement: a, pinned, ackedAt, onAcknowledge }) {
       <p className="byline">From {authorLabel(a.authorId)}</p>
       <p className="message">{a.message}</p>
       {pinned && (
-        <button className="btn primary block" onClick={onAcknowledge}>
+        <button className="btn primary block" onClick={handleGotIt}>
           Got it
         </button>
       )}

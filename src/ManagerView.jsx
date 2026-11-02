@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { EMPLOYEES, STORES, storeById } from './data'
+import { EMPLOYEES, STORES, isQuickTap, readingSeconds, storeById } from './data'
 import { authorLabel, shortDate, targetLabel, timeAgo } from './format'
 import Filters, { matchesAudience } from './Filters'
 
@@ -95,6 +95,7 @@ export default function ManagerView({ manager, data, onPost, onArchive, onRestor
           key={`${manager.id}-${a.id}`}
           announcement={a}
           acks={data.acks[a.id] ?? {}}
+          ackSeconds={data.ackSeconds?.[a.id] ?? {}}
           manager={manager}
           onArchive={handleArchive}
         />
@@ -240,7 +241,7 @@ function NewAnnouncementForm({ manager, onPost, onCancel }) {
   )
 }
 
-function AnnouncementStats({ announcement: a, acks, manager, onArchive }) {
+function AnnouncementStats({ announcement: a, acks, ackSeconds, manager, onArchive }) {
   // For company-wide posts, managers start by looking at their own team.
   const [scope, setScope] = useState(a.target === 'all' ? manager.storeId : a.target)
 
@@ -249,6 +250,9 @@ function AnnouncementStats({ announcement: a, acks, manager, onArchive }) {
   const acked = audience.filter((e) => acks[e.id])
   const pending = audience.filter((e) => !acks[e.id])
   const pct = audience.length ? Math.round((acked.length / audience.length) * 100) : 0
+  const isQuick = (e) => isQuickTap(ackSeconds[e.id], a.message)
+  const quick = acked.filter(isQuick)
+  const storeSuffix = (e) => (scope === 'all' ? ` · ${storeById(e.storeId).name}` : '')
 
   return (
     <article className={`card announcement ${a.important ? 'is-important' : ''}`}>
@@ -303,7 +307,26 @@ function AnnouncementStats({ announcement: a, acks, manager, onArchive }) {
                     <span>{e.name}</span>
                     <span className="muted">
                       {e.title}
-                      {scope === 'all' ? ` · ${storeById(e.storeId).name}` : ''}
+                      {storeSuffix(e)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {quick.length > 0 && (
+            <details className="pending quick">
+              <summary>⚡ May not have read it ({quick.length})</summary>
+              <p className="muted small">
+                Tapped “Got it” within seconds. Reading this takes about {readingSeconds(a.message)} seconds.
+              </p>
+              <ul className="people">
+                {quick.map((e) => (
+                  <li key={e.id}>
+                    <span>{e.name}</span>
+                    <span className="muted">
+                      {e.title}
+                      {storeSuffix(e)} · {ackSeconds[e.id]} sec
                     </span>
                   </li>
                 ))}
@@ -318,10 +341,13 @@ function AnnouncementStats({ announcement: a, acks, manager, onArchive }) {
                   .sort((x, y) => acks[y.id] - acks[x.id])
                   .map((e) => (
                     <li key={e.id}>
-                      <span>{e.name}</span>
+                      <span>
+                        {e.name}
+                        {isQuick(e) && <span className="quick-badge" title="Tapped “Got it” within seconds"> ⚡</span>}
+                      </span>
                       <span className="muted">
                         {e.title}
-                        {scope === 'all' ? ` · ${storeById(e.storeId).name}` : ''} · {shortDate(acks[e.id])}
+                        {storeSuffix(e)} · {shortDate(acks[e.id])}
                       </span>
                     </li>
                   ))}

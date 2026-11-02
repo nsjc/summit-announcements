@@ -9,8 +9,9 @@ export const STORES = [
 ]
 
 const FIRST = [
-  'Jordan', 'Maria', 'Aisha', 'Daniel', 'Priya', 'Marcus', 'Emily', 'Carlos', 'Hannah', 'Kevin',
-  'Sofia', 'Tyler', 'Grace', 'Andre', 'Lily', 'Omar', 'Rachel', 'Ethan', 'Mei', 'Luis',
+  // Rachel (Downtown Denver manager) and Alex (sales associate) match the people quoted in the customer brief.
+  'Rachel', 'Alex', 'Aisha', 'Daniel', 'Priya', 'Marcus', 'Emily', 'Carlos', 'Hannah', 'Kevin',
+  'Sofia', 'Tyler', 'Grace', 'Andre', 'Lily', 'Omar', 'Hector', 'Ethan', 'Mei', 'Luis',
   'Natalie', 'Brandon', 'Chloe', 'Jamal', 'Olivia', 'Ryan', 'Fatima', 'Noah', 'Jasmine', 'Caleb',
   'Ava', 'Diego', 'Megan', 'Samuel', 'Zoe', 'Isaac', 'Leah', 'Victor', 'Nina', 'Owen',
 ]
@@ -52,6 +53,18 @@ export const personById = (id) => PEOPLE.find((p) => p.id === id)
 export const DEMO_EMPLOYEE_ID = EMPLOYEES[0].id
 
 const DAY = 24 * 60 * 60 * 1000
+
+// Roughly how long a message takes to read, at 200 words per minute.
+export function readingSeconds(message) {
+  const words = message.trim().split(/\s+/).length
+  return Math.max(3, Math.round((words / 200) * 60))
+}
+
+// A "quick tap" is a "Got it" that came in under a quarter of the reading time (and under 5 seconds at most).
+export function isQuickTap(seconds, message) {
+  if (seconds == null) return false
+  return seconds < Math.min(5, Math.max(2, readingSeconds(message) / 4))
+}
 
 // Deterministic 0–1 value from a string, so seeded data is the same on every reset.
 function hash(str) {
@@ -154,21 +167,29 @@ export function buildSeedData(now = Date.now()) {
   ]
 
   // acks: { [announcementId]: { [employeeId]: timestamp } }
+  // ackSeconds: { [announcementId]: { [employeeId]: seconds the post was on screen before "Got it" } }
   const acks = {}
+  const ackSeconds = {}
   for (const a of announcements) {
     if (!a.important) continue
     acks[a.id] = {}
+    ackSeconds[a.id] = {}
     const audience = EMPLOYEES.filter((e) => a.target === 'all' || e.storeId === a.target)
+    const readSecs = readingSeconds(a.message)
     for (const e of audience) {
       const isDemo = e.id === DEMO_EMPLOYEE_ID
       // The demo employee has acknowledged only the oldest update.
       if (isDemo ? a.id === 'a1' : hash(a.id + e.id) < a.ackRate) {
         const elapsed = now - a.createdAt
         acks[a.id][e.id] = a.createdAt + Math.floor(hash(e.id + a.id) * elapsed)
+        // About 1 in 8 people tap "Got it" within a couple of seconds; the rest take a realistic reading time.
+        const r = hash(e.id + a.id + 'read')
+        ackSeconds[a.id][e.id] =
+          !isDemo && r < 0.12 ? 1 + Math.floor(r * 20) : Math.round(readSecs * (0.8 + r * 1.7))
       }
     }
     delete a.ackRate
   }
 
-  return { announcements, acks }
+  return { announcements, acks, ackSeconds }
 }

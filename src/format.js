@@ -19,7 +19,7 @@ export function shortDate(ts) {
 
 export function authorLabel(authorId) {
   const p = authorId && personById(authorId)
-  return p ? `${p.name}, Store Manager` : 'Summit Retail HQ'
+  return p ? `${p.name}, Store Manager` : 'Michael, Operations Manager'
 }
 
 export function targetLabel(target) {

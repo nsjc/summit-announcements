@@ -135,6 +135,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .all-done { color: var(--success); font-weight: 600; margin: 10px 0 0; }
 .error { color: var(--danger); margin: 0 0 8px; }
 
+/* Quick taps */
+.pending.quick summary { color: var(--accent); }
+.pending.quick > p { margin: 6px 0 0; }
+.quick-badge { color: var(--accent); }
+
 /* Archive */
 .link.archive-link { display: inline-block; font-size: 13px; margin-top: 12px; color: var(--muted); }
 .archive { margin-top: 28px; }
