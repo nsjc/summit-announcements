@@ -47,11 +47,14 @@ export const PEOPLE = Array.from({ length: 200 }, (_, i) => {
   }
 })
 
+// Michael, the Operations Manager from the brief, works at head office: no store of his own, sees all five.
+export const OPS_MANAGER = { id: 'ops', name: 'Michael', storeId: null, role: 'ops', title: 'Operations Manager' }
+
 export const MANAGERS = PEOPLE.filter((p) => p.role === 'manager')
 export const EMPLOYEES = PEOPLE.filter((p) => p.role === 'employee')
 
 export const storeById = (id) => STORES.find((s) => s.id === id)
-export const personById = (id) => PEOPLE.find((p) => p.id === id)
+export const personById = (id) => (id === OPS_MANAGER.id ? OPS_MANAGER : PEOPLE.find((p) => p.id === id))
 
 // The employee shown first in Employee view; left with pending items so the demo shows pinned updates.
 export const DEMO_EMPLOYEE_ID = EMPLOYEES[0].id
@@ -99,7 +102,7 @@ export function buildSeedData(now = Date.now()) {
         '• Check and mop entry mats at least once every hour.\n' +
         '• Report any spill or injury to your shift lead right away, even if no one was hurt.\n\n' +
         'Thank you for keeping customers and each other safe.',
-      authorId: null,
+      authorId: OPS_MANAGER.id,
       target: 'all',
       important: true,
       createdAt: now - 6 * DAY,
@@ -115,7 +118,7 @@ export function buildSeedData(now = Date.now()) {
         '• Fri, Nov 27 (Black Friday): 6am–11pm\n' +
         '• Sat, Nov 28: 8am–10pm\n\n' +
         'Updated shift schedules will be posted in the break room by Nov 10. Time-off requests for Black Friday weekend must go to your manager by Nov 8.',
-      authorId: null,
+      authorId: OPS_MANAGER.id,
       target: 'all',
       important: true,
       createdAt: now - 3 * DAY,
@@ -131,7 +134,7 @@ export function buildSeedData(now = Date.now()) {
         '• No receipt: store credit only, valid ID required.\n' +
         '• Opened electronics: 15 days, 10% restocking fee.\n\n' +
         'Updated signs will arrive at each store by Nov 13. Please review the policy so you can answer customer questions.',
-      authorId: null,
+      authorId: OPS_MANAGER.id,
       target: 'all',
       important: true,
       createdAt: now - 1 * DAY,

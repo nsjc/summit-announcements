@@ -29,7 +29,7 @@ There's no backend or login. Data is mock data saved in the browser (localStorag
 
 ## Walkthrough
 
-Use **Manager / Employee** at the top to switch roles, and **Viewing as** to pick a person. The demo starts as **Rachel Lee**, manager of the Downtown Denver store, and **Alex Garcia**, a cashier there.
+Use **Manager / Employee** at the top to switch roles, and **Viewing as** to pick a person. The demo starts as **Rachel Lee**, manager of the Downtown Denver store, and **Alex Garcia**, a cashier there. Under Manager you can also pick **Michael — Head office**, the Operations Manager from the brief, who sees every store.
 
 **As a manager (Rachel):**
 - Post an announcement with a title, message, audience (*my store* or *all stores*) and an **Important – requires acknowledgment** switch.
@@ -37,6 +37,10 @@ Use **Manager / Employee** at the top to switch roles, and **Viewing as** to pic
 - **⚡ May not have read it** lists people who tapped "Got it" much faster than the post takes to read.
 - Filter the list by audience and type, including **Still waiting on my team**.
 - **Archive** your own posts to hide them from employees without losing their acknowledgments. Restore them, or delete them permanently from the Archived section.
+
+**As head office (Michael):**
+- Sees every announcement from every store, with acknowledgment stats across all stores and a per-store breakdown.
+- Can post to all stores at once or to any single store.
 
 **As an employee (Alex):**
 - A feed of updates for your store and the whole company.
@@ -56,12 +60,12 @@ The known risk: nothing stops a manager from marking *everything* important, whi
 ## Assumptions
 
 - **Audience is by store.** A post goes to one store or all stores. There's no targeting by role or shift.
-- **Store managers can post to their own store or to all stores**, not to one other specific store. Company-wide posts in the sample data come from Michael, Operations Manager.
+- **Two kinds of manager.** Store managers see and post to their own store (or all stores). Michael, the Operations Manager at head office, sees every store and can post to all stores or any single one. Company-wide sample posts come from him.
 - **Only employees count toward acknowledgment %.** Managers aren't asked to acknowledge.
 - **"Got it" means "I've seen this," not "I understood it."** The quick-tap flag is a hint for managers, not proof. It compares how long the post was on screen before the tap with an estimated reading time (200 words per minute).
 - **Acknowledgments can't be undone**, and regular posts aren't tracked at all.
 - **Managers can archive or delete only their own posts.**
-- **People:** 5 stores × 40 people (1 manager + 39 employees) = 200. Names are generated. Rachel, Alex and Michael match the people in the brief.
+- **People:** 5 stores × 40 people (1 manager + 39 employees) = 200, plus Michael at head office. Names are generated. Rachel, Alex and Michael match the people in the brief.
 - **Sample content is invented**, including holiday hours, return-policy details and acknowledgment rates.
 
 ## What I left out, and why

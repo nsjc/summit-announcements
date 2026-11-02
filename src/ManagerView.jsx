@@ -4,13 +4,17 @@ import { authorLabel, shortDate, targetLabel, timeAgo } from './format'
 import Filters, { matchesAudience } from './Filters'
 
 export default function ManagerView({ manager, data, onPost, onArchive, onRestore, onDelete }) {
+  // Head office (Michael) has no store of his own and sees every store's posts.
+  const isHeadOffice = !manager.storeId
   const store = storeById(manager.storeId)
   const [showForm, setShowForm] = useState(false)
   const [notice, setNotice] = useState('')
   const [audienceFilter, setAudienceFilter] = useState('any')
   const [typeFilter, setTypeFilter] = useState('any')
 
-  const relevant = data.announcements.filter((a) => a.target === 'all' || a.target === manager.storeId)
+  const relevant = data.announcements.filter(
+    (a) => isHeadOffice || a.target === 'all' || a.target === manager.storeId,
+  )
   const forMyStore = relevant.filter((a) => !a.archivedAt).sort((a, b) => b.createdAt - a.createdAt)
   const archived = relevant.filter((a) => a.archivedAt).sort((a, b) => b.archivedAt - a.archivedAt)
 
@@ -35,7 +39,9 @@ export default function ManagerView({ manager, data, onPost, onArchive, onRestor
     if (typeFilter === 'info' && a.important) return false
     if (typeFilter === 'pending') {
       const acks = data.acks[a.id] ?? {}
-      const myTeam = EMPLOYEES.filter((e) => e.storeId === manager.storeId)
+      const myTeam = EMPLOYEES.filter((e) =>
+        isHeadOffice ? a.target === 'all' || e.storeId === a.target : e.storeId === manager.storeId,
+      )
       if (!a.important || myTeam.every((e) => acks[e.id])) return false
     }
     return true
@@ -53,8 +59,10 @@ export default function ManagerView({ manager, data, onPost, onArchive, onRestor
     <>
       <section className="page-head">
         <div>
-          <h1>{store.name} store</h1>
-          <p className="muted">Manager dashboard · {manager.name}</p>
+          <h1>{isHeadOffice ? 'All stores' : `${store.name} store`}</h1>
+          <p className="muted">
+            {isHeadOffice ? 'Head office dashboard' : 'Manager dashboard'} · {manager.name}
+          </p>
         </div>
         {!showForm && (
           <button className="btn primary" onClick={() => setShowForm(true)}>
@@ -74,12 +82,12 @@ export default function ManagerView({ manager, data, onPost, onArchive, onRestor
       </h2>
 
       <Filters
-        storeName={store.name}
+        storeName={isHeadOffice ? 'Single store' : store.name}
         audience={audienceFilter}
         type={typeFilter}
         typeOptions={[
           ['important', 'Important'],
-          ['pending', 'Still waiting on my team'],
+          ['pending', isHeadOffice ? 'Still waiting on someone' : 'Still waiting on my team'],
           ['info', 'Info only'],
         ]}
         onAudienceChange={setAudienceFilter}
@@ -157,7 +165,7 @@ function ArchivedItem({ announcement: a, acks, manager, onRestore, onDelete }) {
 function NewAnnouncementForm({ manager, onPost, onCancel }) {
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
-  const [target, setTarget] = useState(manager.storeId)
+  const [target, setTarget] = useState(manager.storeId ?? 'all')
   const [important, setImportant] = useState(false)
   const [error, setError] = useState('')
 
@@ -205,21 +213,31 @@ function NewAnnouncementForm({ manager, onPost, onCancel }) {
 
       <fieldset className="field">
         <legend>Send to</legend>
-        <div className="choice-row">
-          <label className={`choice ${target === manager.storeId ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="target"
-              checked={target === manager.storeId}
-              onChange={() => setTarget(manager.storeId)}
-            />
-            My store ({storeById(manager.storeId).name})
-          </label>
-          <label className={`choice ${target === 'all' ? 'selected' : ''}`}>
-            <input type="radio" name="target" checked={target === 'all'} onChange={() => setTarget('all')} />
-            All stores
-          </label>
-        </div>
+        {manager.storeId ? (
+          <div className="choice-row">
+            <label className={`choice ${target === manager.storeId ? 'selected' : ''}`}>
+              <input
+                type="radio"
+                name="target"
+                checked={target === manager.storeId}
+                onChange={() => setTarget(manager.storeId)}
+              />
+              My store ({storeById(manager.storeId).name})
+            </label>
+            <label className={`choice ${target === 'all' ? 'selected' : ''}`}>
+              <input type="radio" name="target" checked={target === 'all'} onChange={() => setTarget('all')} />
+              All stores
+            </label>
+          </div>
+        ) : (
+          // Head office can reach every store at once or any single store.
+          <select value={target} onChange={(e) => setTarget(e.target.value)}>
+            <option value="all">All stores ({EMPLOYEES.length} employees)</option>
+            {STORES.map((s) => (
+              <option key={s.id} value={s.id}>{s.name} only</option>
+            ))}
+          </select>
+        )}
       </fieldset>
 
       <label className="toggle">
@@ -243,7 +261,7 @@ function NewAnnouncementForm({ manager, onPost, onCancel }) {
 
 function AnnouncementStats({ announcement: a, acks, ackSeconds, manager, onArchive }) {
   // For company-wide posts, managers start by looking at their own team.
-  const [scope, setScope] = useState(a.target === 'all' ? manager.storeId : a.target)
+  const [scope, setScope] = useState(a.target === 'all' ? manager.storeId ?? 'all' : a.target)
 
   const inScope = (e) => (scope === 'all' ? a.target === 'all' || e.storeId === a.target : e.storeId === scope)
   const audience = EMPLOYEES.filter(inScope)

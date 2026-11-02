@@ -1,11 +1,24 @@
+import { useEffect } from 'react'
 import { useStoredState } from './storage'
-import { buildSeedData, DEMO_EMPLOYEE_ID, MANAGERS, STORES, EMPLOYEES, personById, storeById } from './data'
+import {
+  buildSeedData, DEMO_EMPLOYEE_ID, MANAGERS, OPS_MANAGER, STORES, EMPLOYEES, personById, storeById,
+} from './data'
 import ManagerView from './ManagerView'
 import EmployeeView from './EmployeeView'
 
 export default function App() {
   // v2 added reading times (ackSeconds); bumping the key gives everyone fresh sample data.
   const [data, setData] = useStoredState('summit.data.v2', () => buildSeedData())
+
+  // Head-office posts saved before Michael was a selectable person have no author; they are his.
+  useEffect(() => {
+    if (data.announcements.some((a) => a.authorId == null)) {
+      setData((d) => ({
+        ...d,
+        announcements: d.announcements.map((a) => (a.authorId == null ? { ...a, authorId: OPS_MANAGER.id } : a)),
+      }))
+    }
+  }, [data, setData])
   const [role, setRole] = useStoredState('summit.role', 'manager')
   const [managerId, setManagerId] = useStoredState('summit.managerId', MANAGERS[0].id)
   const [employeeId, setEmployeeId] = useStoredState('summit.employeeId', DEMO_EMPLOYEE_ID)
@@ -86,11 +99,18 @@ export default function App() {
             <span>Viewing as</span>
             {role === 'manager' ? (
               <select value={manager.id} onChange={(e) => setManagerId(e.target.value)}>
-                {MANAGERS.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} — {storeById(m.storeId).name}
+                <optgroup label="Store managers">
+                  {MANAGERS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} — {storeById(m.storeId).name}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Head office">
+                  <option value={OPS_MANAGER.id}>
+                    {OPS_MANAGER.name} — Head office
                   </option>
-                ))}
+                </optgroup>
               </select>
             ) : (
               <select value={employee.id} onChange={(e) => setEmployeeId(e.target.value)}>
