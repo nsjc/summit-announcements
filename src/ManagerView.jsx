@@ -6,10 +6,26 @@ export default function ManagerView({ manager, data, onPost, onDelete }) {
   const store = storeById(manager.storeId)
   const [showForm, setShowForm] = useState(false)
   const [notice, setNotice] = useState('')
+  const [audienceFilter, setAudienceFilter] = useState('any')
+  const [typeFilter, setTypeFilter] = useState('any')
 
-  const visible = data.announcements
+  const forMyStore = data.announcements
     .filter((a) => a.target === 'all' || a.target === manager.storeId)
     .sort((a, b) => b.createdAt - a.createdAt)
+
+  const visible = forMyStore.filter((a) => {
+    if (audienceFilter === 'all' && a.target !== 'all') return false
+    if (audienceFilter === 'store' && a.target === 'all') return false
+    if (typeFilter === 'important' && !a.important) return false
+    if (typeFilter === 'info' && a.important) return false
+    if (typeFilter === 'pending') {
+      const acks = data.acks[a.id] ?? {}
+      const myTeam = EMPLOYEES.filter((e) => e.storeId === manager.storeId)
+      if (!a.important || myTeam.every((e) => acks[e.id])) return false
+    }
+    return true
+  })
+  const filtered = audienceFilter !== 'any' || typeFilter !== 'any'
 
   function handlePost(announcement) {
     onPost(announcement)
@@ -39,8 +55,45 @@ export default function ManagerView({ manager, data, onPost, onDelete }) {
         <NewAnnouncementForm manager={manager} onPost={handlePost} onCancel={() => setShowForm(false)} />
       )}
 
-      <h2 className="section-title">Announcements ({visible.length})</h2>
-      {visible.length === 0 && <p className="empty">No announcements yet.</p>}
+      <h2 className="section-title">
+        Announcements ({filtered ? `${visible.length} of ${forMyStore.length}` : forMyStore.length})
+      </h2>
+
+      <div className="filters">
+        <label>
+          <span>Sent to</span>
+          <select value={audienceFilter} onChange={(e) => setAudienceFilter(e.target.value)}>
+            <option value="any">Any audience</option>
+            <option value="all">All stores</option>
+            <option value="store">{store.name} only</option>
+          </select>
+        </label>
+        <label>
+          <span>Type</span>
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+            <option value="any">All types</option>
+            <option value="important">Important</option>
+            <option value="pending">Still waiting on my team</option>
+            <option value="info">Info only</option>
+          </select>
+        </label>
+        {filtered && (
+          <button
+            className="link"
+            onClick={() => {
+              setAudienceFilter('any')
+              setTypeFilter('any')
+            }}
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
+      {forMyStore.length === 0 && <p className="empty">No announcements yet.</p>}
+      {forMyStore.length > 0 && visible.length === 0 && (
+        <p className="empty">No announcements match these filters.</p>
+      )}
       {visible.map((a) => (
         <AnnouncementStats
           key={`${manager.id}-${a.id}`}

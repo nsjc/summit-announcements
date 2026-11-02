@@ -135,6 +135,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .all-done { color: var(--success); font-weight: 600; margin: 10px 0 0; }
 .error { color: var(--danger); margin: 0 0 8px; }
 
+/* Filters */
+.filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin-bottom: 14px; }
+.filters label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); flex: 1 1 150px; }
+.filters select {
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  background: #fff; color: var(--text); font-size: 14px;
+}
+.filters .link { font-size: 14px; padding-bottom: 9px; }
+
 /* Stats */
 .stats { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 .scope { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 10px; }
