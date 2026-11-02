@@ -1,15 +1,28 @@
+import { useState } from 'react'
 import { storeById } from './data'
 import { authorLabel, shortDate, targetLabel, timeAgo } from './format'
+import Filters, { matchesAudience } from './Filters'
 
 export default function EmployeeView({ employee, data, onAcknowledge }) {
   const store = storeById(employee.storeId)
   const ackedAt = (a) => data.acks[a.id]?.[employee.id]
+  const [audienceFilter, setAudienceFilter] = useState('any')
+  const [typeFilter, setTypeFilter] = useState('any')
 
   const feed = data.announcements
     .filter((a) => a.target === 'all' || a.target === employee.storeId)
     .sort((a, b) => b.createdAt - a.createdAt)
-  const needsAck = feed.filter((a) => a.important && !ackedAt(a))
-  const rest = feed.filter((a) => !needsAck.includes(a))
+  const allNeedsAck = feed.filter((a) => a.important && !ackedAt(a))
+
+  const visible = feed.filter((a) => {
+    if (!matchesAudience(a, audienceFilter)) return false
+    if (typeFilter === 'important' && !a.important) return false
+    if (typeFilter === 'pending' && !allNeedsAck.includes(a)) return false
+    if (typeFilter === 'info' && a.important) return false
+    return true
+  })
+  const needsAck = visible.filter((a) => allNeedsAck.includes(a))
+  const rest = visible.filter((a) => !allNeedsAck.includes(a))
 
   return (
     <>
@@ -22,7 +35,24 @@ export default function EmployeeView({ employee, data, onAcknowledge }) {
         </div>
       </section>
 
-      {needsAck.length > 0 ? (
+      <Filters
+        storeName={store.name}
+        audience={audienceFilter}
+        type={typeFilter}
+        typeOptions={[
+          ['important', 'Important'],
+          ['pending', 'Needs my acknowledgment'],
+          ['info', 'Info only'],
+        ]}
+        onAudienceChange={setAudienceFilter}
+        onTypeChange={setTypeFilter}
+      />
+
+      {allNeedsAck.length === 0 && (
+        <div className="notice">✓ You’re all caught up on important updates.</div>
+      )}
+
+      {needsAck.length > 0 && (
         <>
           <h2 className="section-title attention">
             📌 Needs your acknowledgment ({needsAck.length})
@@ -31,15 +61,22 @@ export default function EmployeeView({ employee, data, onAcknowledge }) {
             <FeedItem key={a.id} announcement={a} pinned onAcknowledge={() => onAcknowledge(a.id, employee.id)} />
           ))}
         </>
-      ) : (
-        <div className="notice">✓ You’re all caught up on important updates.</div>
       )}
 
-      <h2 className="section-title">All updates</h2>
-      {rest.length === 0 && <p className="empty">Nothing else right now.</p>}
-      {rest.map((a) => (
-        <FeedItem key={a.id} announcement={a} ackedAt={ackedAt(a)} />
-      ))}
+      {visible.length === 0 ? (
+        <p className="empty">No updates match these filters.</p>
+      ) : (
+        rest.length > 0 && (
+          <>
+            <h2 className="section-title">
+              {needsAck.length > 0 ? 'Other updates' : 'All updates'} ({rest.length})
+            </h2>
+            {rest.map((a) => (
+              <FeedItem key={a.id} announcement={a} ackedAt={ackedAt(a)} />
+            ))}
+          </>
+        )
+      )}
     </>
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { EMPLOYEES, STORES, storeById } from './data'
 import { authorLabel, shortDate, targetLabel, timeAgo } from './format'
+import Filters, { matchesAudience } from './Filters'
 
 export default function ManagerView({ manager, data, onPost, onDelete }) {
   const store = storeById(manager.storeId)
@@ -14,8 +15,7 @@ export default function ManagerView({ manager, data, onPost, onDelete }) {
     .sort((a, b) => b.createdAt - a.createdAt)
 
   const visible = forMyStore.filter((a) => {
-    if (audienceFilter === 'all' && a.target !== 'all') return false
-    if (audienceFilter === 'store' && a.target === 'all') return false
+    if (!matchesAudience(a, audienceFilter)) return false
     if (typeFilter === 'important' && !a.important) return false
     if (typeFilter === 'info' && a.important) return false
     if (typeFilter === 'pending') {
@@ -59,36 +59,18 @@ export default function ManagerView({ manager, data, onPost, onDelete }) {
         Announcements ({filtered ? `${visible.length} of ${forMyStore.length}` : forMyStore.length})
       </h2>
 
-      <div className="filters">
-        <label>
-          <span>Sent to</span>
-          <select value={audienceFilter} onChange={(e) => setAudienceFilter(e.target.value)}>
-            <option value="any">Any audience</option>
-            <option value="all">All stores</option>
-            <option value="store">{store.name} only</option>
-          </select>
-        </label>
-        <label>
-          <span>Type</span>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-            <option value="any">All types</option>
-            <option value="important">Important</option>
-            <option value="pending">Still waiting on my team</option>
-            <option value="info">Info only</option>
-          </select>
-        </label>
-        {filtered && (
-          <button
-            className="link"
-            onClick={() => {
-              setAudienceFilter('any')
-              setTypeFilter('any')
-            }}
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
+      <Filters
+        storeName={store.name}
+        audience={audienceFilter}
+        type={typeFilter}
+        typeOptions={[
+          ['important', 'Important'],
+          ['pending', 'Still waiting on my team'],
+          ['info', 'Info only'],
+        ]}
+        onAudienceChange={setAudienceFilter}
+        onTypeChange={setTypeFilter}
+      />
 
       {forMyStore.length === 0 && <p className="empty">No announcements yet.</p>}
       {forMyStore.length > 0 && visible.length === 0 && (
