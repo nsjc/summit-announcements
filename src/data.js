@@ -9,8 +9,7 @@ export const STORES = [
 ]
 
 const FIRST = [
-  // Rachel (Downtown Denver manager) and Alex (sales associate) match the people quoted in the customer brief.
-  'Rachel', 'Alex', 'Aisha', 'Daniel', 'Priya', 'Marcus', 'Emily', 'Carlos', 'Hannah', 'Kevin',
+  'Jordan', 'Maria', 'Aisha', 'Daniel', 'Priya', 'Marcus', 'Emily', 'Carlos', 'Hannah', 'Kevin',
   'Sofia', 'Tyler', 'Grace', 'Andre', 'Lily', 'Omar', 'Hector', 'Ethan', 'Mei', 'Luis',
   'Natalie', 'Brandon', 'Chloe', 'Jamal', 'Olivia', 'Ryan', 'Fatima', 'Noah', 'Jasmine', 'Caleb',
   'Ava', 'Diego', 'Megan', 'Samuel', 'Zoe', 'Isaac', 'Leah', 'Victor', 'Nina', 'Owen',
@@ -28,15 +27,20 @@ const TITLES = [
   'Sales Associate', 'Cashier', 'Shift Lead', 'Visual Merchandiser', 'Stock Associate',
 ]
 
+// Rachel (Downtown Denver manager) and Alex (sales associate) match the people quoted in the customer brief.
+const NAMED = { p1: 'Rachel Lee', p2: 'Alex Garcia' }
+
 export const PEOPLE = Array.from({ length: 200 }, (_, i) => {
   const storeIndex = Math.floor(i / 40)
   const isManager = i % 40 === 0
-  // Offsetting the last name by store keeps all 200 names unique.
-  const first = FIRST[i % 40]
+  // Shifting first and last names by different amounts per store gives every store
+  // a different mix of names and keeps all 200 unique.
+  const first = FIRST[(i % 40 + storeIndex * 3) % 40]
   const last = LAST[(i % 40 + storeIndex * 7) % 40]
+  const id = `p${i + 1}`
   return {
-    id: `p${i + 1}`,
-    name: `${first} ${last}`,
+    id,
+    name: NAMED[id] ?? `${first} ${last}`,
     storeId: STORES[storeIndex].id,
     role: isManager ? 'manager' : 'employee',
     title: isManager ? 'Store Manager' : TITLES[i % TITLES.length],
